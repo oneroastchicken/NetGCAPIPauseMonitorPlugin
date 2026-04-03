@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	 <TargetFramework>net7.0</TargetFramework>
+	  <Authors>APT RWZHENG</Authors>
+	  <Company>APT</Company>
+	 <AssemblyName>APT.GCPauseMonitorPlugin</AssemblyName>
+	 <PackageId>APT.GCPauseMonitorPlugin</PackageId>
+     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+	<PropertyGroup Label="Globals">
+		<AssemblyVersion>7.0.1</AssemblyVersion>
+		<FileVersion>7.0.1</FileVersion>
+		<Version>7.2.2</Version>
+		<SccProjectName>SAK</SccProjectName>
+		<SccProvider>SAK</SccProvider>
+		<SccAuxPath>SAK</SccAuxPath>
+		<SccLocalPath>SAK</SccLocalPath>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Volo.Abp.AspNetCore" Version="7.0.1" />
+		<PackageReference Include="Serilog.AspNetCore" Version="6.1.0" />
+		<PackageReference Include="Volo.Abp.BackgroundWorkers" Version="7.0.1" />
+		<PackageReference Include="Volo.Abp.EntityFrameworkCore.PostgreSql" Version="7.0.1" />
+	</ItemGroup>
+</Project>
+
+<!--<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Authors>APT RWZHENG</Authors>
+		<Company>APT</Company>
+		<AssemblyName>APT.GCPauseMonitorPlugin</AssemblyName>
+		<PackageId>APT.GCPauseMonitorPlugin</PackageId>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<PropertyGroup Label="Globals">
+		<AssemblyVersion>8.0.1</AssemblyVersion>
+		<FileVersion>8.0.1</FileVersion>
+		<Version>8.1.0</Version>
+		<SccProjectName>SAK</SccProjectName>
+		<SccProvider>SAK</SccProvider>
+		<SccAuxPath>SAK</SccAuxPath>
+		<SccLocalPath>SAK</SccLocalPath>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Volo.Abp.AspNetCore" Version="8.0.1" />
+		<PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
+		<PackageReference Include="Volo.Abp.BackgroundWorkers" Version="8.0.1" />
+		<PackageReference Include="Volo.Abp.EntityFrameworkCore.PostgreSql" Version="8.0.1" />
+		
+	</ItemGroup>
+
+</Project>-->
+
+
+

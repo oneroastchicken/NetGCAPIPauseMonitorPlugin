@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>API性能监控</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    #bgCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: -1;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,255,255,0.3); border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,255,255,0.6); }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-6">
+
+<!-- 启动页 -->
+<div id="startScreen" 
+     class="fixed inset-0 flex flex-col items-center justify-center space-y-4 overflow-hidden z-50">
+  <h1 class="text-3xl font-bold">🚀 API监控启动器</h1>
+  <div class="flex space-x-2">
+    <input style = "width: 360px;" id="bizType" type="text" placeholder="输入 users hr bpm im workbench calendar..." 
+           class="px-3 py-2 rounded-lg bg-gray-800 text-gray-100 outline-none">
+    <select id="envSelect" 
+            class="px-3 py-2 rounded-lg bg-gray-800 text-gray-100 outline-none">
+      <option value="dev">开发</option>
+      <option value="test">测试</option>
+      <option value="webapi" selected>正式</option>
+	  <option value="yunapi" selected>云</option>
+    </select>
+  </div>
+  <button id="launchBtn" 
+          class="px-6 py-2 bg-cyan-500 text-gray-900 rounded-lg font-bold hover:bg-cyan-400 transition-all">
+    启动监控 🚀
+  </button>
+</div>
+
+<!-- 主内容 max-w-7xl -->
+<div id="mainContent" class="mx-auto space-y-6 relative z-10 hidden">
+
+  <!-- 标题 -->
+  <h1 class="flex items-center justify-center space-x-3 mb-6">
+              <!-- w-12 -->
+    <div class=" h-12 bg-gray-900 border border-cyan-500 rounded-lg flex flex-col justify-between p-2 shadow-lg backdrop-blur-sm">
+      <div class="flex space-x-1">
+        <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+        <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+      </div>
+      <pre id="bizTypeName" class="text-xs text-gray-100 font-mono leading-none">API</pre>
+    </div>
+    <span class="text-4xl font-extrabold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-transparent bg-clip-text drop-shadow-lg">
+      API 性能监控面板
+    </span>
+  </h1>
+
+  <!-- 设置区域 -->
+  <div class="bg-gray-800/60 backdrop-blur-md shadow-lg rounded-xl p-4 flex flex-wrap gap-4 items-center">
+    <select id="podKey" class="border border-cyan-500 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-cyan-400 outline-none">
+      <option value="">加载中...</option>
+    </select>
+    <input id="path" type="text" placeholder="请输入要监控的 Path" 
+           class="flex-1 min-w-[200px] border border-cyan-500 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-cyan-400 outline-none">
+    <input id="time" type="number" placeholder="耗时阈值(ms)" 
+           class="w-40 border border-cyan-500 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-cyan-400 outline-none">
+    <select id="sort" 
+            class="border border-cyan-500 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-cyan-400 outline-none">
+      <option value="time">按请求时间排序</option>
+      <option value="elapsed">按耗时排序</option>
+    </select>
+	<select id="monitSql" 
+            class="border border-cyan-500 rounded-lg px-3 py-2 bg-gray-900 text-gray-100 focus:ring-2 focus:ring-cyan-400 outline-none">
+      <option value="true">监控SQL</option>
+      <option value="false">不监控SQL</option>
+    </select>
+    <button id="setBtn" class="px-4 py-2 bg-cyan-500 text-gray-900 rounded-lg shadow-lg hover:bg-cyan-400 transition-all duration-300">
+      设置
+    </button>
+    <button id="clearBtn" class="px-4 py-2 bg-red-600 text-gray-100 rounded-lg shadow-lg hover:bg-red-500 transition-all duration-300">
+      清除
+    </button>
+  </div>
+
+  <!-- 数据表格 -->
+  <div class="bg-gray-900/70 shadow-lg rounded-xl overflow-hidden">
+    <table id="resultTable" class="min-w-full table-auto text-sm text-gray-100">
+      <thead class="bg-gray-700/70 text-cyan-300 uppercase tracking-wide">
+        <tr>
+          <th class="px-4 py-2 text-left">实例</th>
+          <th class="px-4 py-2 text-left">路径</th>
+          <th class="px-4 py-2 text-left">开始时间</th>
+          <th class="px-4 py-2 text-left">耗时</th>
+		  <th class="px-4 py-2 text-left">SQL</th>
+		  <th class="px-4 py-2 text-left">QNS</th>
+          <th class="px-4 py-2 text-left">Worker</th>
+          <th class="px-4 py-2 text-left">IOCP</th>
+          <th class="px-4 py-2 text-left">GC</th>
+        </tr>
+      </thead>
+    </table>
+    <div id="loadingTip" class="text-center text-gray-400 py-4">正在加载数据...</div>
+  </div>
+</div>
+
+<canvas id="bgCanvas"></canvas>
+
+<script>
+// ---------------------- 粒子背景 ----------------------
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const numParticles = 80;
+
+function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+for(let i=0;i<numParticles;i++){
+  particles.push({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    vx: (Math.random()-0.5)*0.5,
+    vy: (Math.random()-0.5)*0.5,
+    size: Math.random()*2+1
+  });
+}
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let p of particles){
+    ctx.fillStyle = 'rgba(0,255,255,0.7)';
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+    ctx.fill();
+    p.x += p.vx; p.y += p.vy;
+    if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
+    if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0;
+  }
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      let dx = particles[i].x - particles[j].x;
+      let dy = particles[i].y - particles[j].y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist<120){
+        ctx.strokeStyle = `rgba(0,255,255,${0.2*(1-dist/120)})`;
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ---------------------- 业务监控逻辑 ----------------------
+let intervalId = null;
+let baseApiUrl = "";
+let currentBizType = "";
+
+function getElapsedColor(elapsed) {
+  if (elapsed < 500) return 'text-green-400 font-bold';
+  if (elapsed <= 1000) return 'text-yellow-400 font-semibold';
+  return 'text-red-500 font-bold animate-pulse';
+}
+
+// 启动按钮逻辑
+document.getElementById("launchBtn").addEventListener("click", () => {
+  const bizType = document.getElementById("bizType").value.trim();
+  const env = document.getElementById("envSelect").value;
+  if (!bizType) { alert("请输入 bizType"); return; }
+
+  currentBizType = bizType;
+  baseApiUrl = `http://${env}.xxx.com/api/${bizType}/`;
+
+  document.getElementById("startScreen").classList.add("hidden");
+  document.getElementById("mainContent").classList.remove("hidden");
+  document.getElementById("bizTypeName").innerHTML = bizType;
+  
+
+  loadPodKeys();
+});
+
+async function loadPodKeys() {
+  const select = document.getElementById("podKey");
+  select.innerHTML = "<option value=''>加载中...</option>";
+  try {
+    let allKeys = [];
+    for (let i = 0; i < 30; i++) {
+      const res = await fetch(`${baseApiUrl}pod-key`);
+      const data = await res.json();
+      allKeys = allKeys.concat(data);
+    }
+    const uniqueKeys = [...new Set(allKeys)];
+    select.innerHTML = "";
+    uniqueKeys.forEach(k => {
+      const opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = k.replace(`${currentBizType}-`, "");
+      select.appendChild(opt);
+    });
+
+    loadMonitor("");
+    if (intervalId) clearInterval(intervalId);
+    intervalId = setInterval(() => {
+      const path = document.getElementById("path").value.trim();
+      loadMonitor(path);
+    }, 1000);
+
+  } catch (err) {
+    console.error("获取 PodKey 失败:", err);
+    select.innerHTML = "<option value=''>加载失败</option>";
+  }
+}
+
+function setMonitor() {
+  const podKeyFull = document.getElementById("podKey").value;
+  const path = document.getElementById("path").value.trim();
+  const time = document.getElementById("time").value.trim();
+  const monitSql = document.getElementById("monitSql").value.trim();
+  if (!podKeyFull || !path || !time) { alert("请选择 PodKey 并输入 Path 和 Time"); return; }
+  const podKey = podKeyFull.replace(`${currentBizType}-`, "");
+  fetch(`${baseApiUrl}gc-perf-set?podKey=${podKey}&path=${encodeURIComponent(path)}&time=${time}&monitSql=${monitSql}`)
+    .then(r=>r.json()).then(()=>console.log("设置成功"));
+}
+
+function clearMonitor() {
+  fetch(`${baseApiUrl}gc-perf-set?clear=true`)
+    .then(r=>r.json()).then(()=>{
+      console.log("已清除");
+      const table = document.getElementById("resultTable");
+      Array.from(table.querySelectorAll("tbody")).forEach(tb=>tb.remove());
+    });
+}
+
+function renderInstanceData(tbody, instanceData, cleanKey){
+  Array.from(tbody.querySelectorAll("tr")).slice(1).forEach(r=>r.remove());
+  const headerRow = tbody.querySelector("tr");
+  const isCollapsed = tbody.dataset.collapsed === "true";
+
+  const arrow = isCollapsed ? "▶" : "▼";
+  headerRow.querySelector("td").innerHTML = `${arrow} 服务实例: ${cleanKey}`;
+
+  if(isCollapsed) return;
+
+  (instanceData.perfs||[]).forEach(perf=>{
+    const tr = document.createElement("tr");
+    tr.className="hover:bg-gray-700/50 hover:shadow-lg hover:scale-[1.01] transition-all duration-200";
+    const elapsedClass = getElapsedColor(perf.elapsed);
+	const elapsedSQLClass = getElapsedColor(perf.sqlElapsed);
+	
+	  // 使用 Intl.DateTimeFormat 来格式化日期和时间
+    const date = new Date(perf.beginTime);
+    const formattedDate = new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        fractionalSecondDigits: 3 // 显示三位毫秒
+    }).format(date);
+	
+	//      <td class="px-4 py-2 text-gray-400">${new Date(perf.beginTime).toLocaleString()}</td>
+    tr.innerHTML=`
+      <td class="px-4 py-2 text-gray-100">${cleanKey}</td>
+      <td class="px-4 py-2 text-gray-100">${perf.path}</td>
+      <td class="px-4 py-2 text-gray-400">${formattedDate}</td>
+      <td class="px-4 py-2 font-medium ${elapsedClass}">${perf.elapsed} ms</td>
+	  <td class="px-4 py-2 font-medium ${elapsedSQLClass}">${perf.sqlElapsed} ms</td>
+	  <td class="px-4 py-2 text-gray-100">${perf.sqlCount}</td>
+      <td class="px-4 py-2 text-gray-200">${perf.workerBefore} → ${perf.workerAfter}</td>
+      <td class="px-4 py-2 text-gray-200">${perf.ioBefore} → ${perf.ioAfter}</td>
+      <td class="px-4 py-2 text-gray-200">Gen0: ${perf.gen0}, Gen1: ${perf.gen1}, Gen2: ${perf.gen2}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadMonitor(path) {
+  const sort = document.getElementById("sort").value;
+  const loadingTip = document.getElementById("loadingTip");
+  fetch(`${baseApiUrl}gc-perf?path=${encodeURIComponent(path||"")}&sort=${sort}`)
+    .then(r=>r.json())
+    .then(data=>{
+      const table = document.getElementById("resultTable");
+      loadingTip.style.display="none";
+      Object.entries(data).forEach(([instanceKey, instanceData])=>{
+        const cleanKey = instanceKey.replace(`${currentBizType}-`, "");
+        let tbody = table.querySelector(`tbody[data-instance="${cleanKey}"]`);
+
+        if(!tbody){
+          tbody = document.createElement("tbody");
+          tbody.dataset.instance = cleanKey;
+          tbody.dataset.collapsed = "false"; // 默认展开
+          tbody.className="divide-y divide-gray-600 mb-2";
+
+          const headerRow = document.createElement("tr");
+          headerRow.className="cursor-pointer bg-cyan-900/50 text-cyan-300 font-bold";
+          headerRow.innerHTML=`<td colspan="9" class="px-4 py-2">▶ 服务实例: ${cleanKey}</td>`;
+
+          headerRow.addEventListener("click", ()=>{
+            const collapsed = tbody.dataset.collapsed === "true";
+            tbody.dataset.collapsed = collapsed ? "false" : "true";
+            renderInstanceData(tbody, instanceData, cleanKey);
+          });
+
+          tbody.appendChild(headerRow);
+          table.appendChild(tbody);
+        }
+
+        renderInstanceData(tbody, instanceData, cleanKey);
+      });
+    });
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("setBtn").addEventListener("click", setMonitor);
+  document.getElementById("clearBtn").addEventListener("click", clearMonitor);
+  document.getElementById("sort").addEventListener("change",()=>{
+    loadMonitor(document.getElementById("path").value.trim());
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1 @@
+dotnet nuget push -s "https://nuget.xxx.com/v3/index.json" -k "qlz@#abcd" ./APT.GCPauseMonitorPlugin.8.0.2.nupkg
