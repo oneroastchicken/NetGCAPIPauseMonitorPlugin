@@ -47,12 +47,7 @@ public class YourProjectModule : AbpModule
 
 3️⃣ Run Your Project
 
-Open browser:
-
-http://localhost:xxxx/gc-dashboard
-🧩 EF Core SQL Monitoring
-
-This plugin automatically hooks into EF Core and tracks SQL execution time.
+Open PageDashboard htm
 
 What you get:
 ⏱ Execution duration per query
